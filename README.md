@@ -7,7 +7,7 @@ An API to consume the GitHub API...meant to be used with
 
 - Create a GitHub PAT, and replace the default value in `appsettings.json`
 
-```json
+```javascript
 {
   // other fields removed for brevity
   "GitHubToken": "your github token here"
