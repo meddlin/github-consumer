@@ -1,5 +1,11 @@
 ﻿namespace GitHubConsumer.Models
 {
+    public class GitHubActionsWorkflowResponse
+    {
+        public int total_count { get; set; }
+        public List<GitHubActionsWorkflow> workflows { get; set; }
+    }
+
     public class GitHubActionsWorkflow
     {
         public int Id { get; set; }
