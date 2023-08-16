@@ -1,4 +1,5 @@
 ﻿using GitHubConsumer.Models;
+using GitHubConsumer.Utilities;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Headers;
@@ -21,48 +22,20 @@ namespace GitHubConsumer.Controllers
         }
 
         [HttpGet]
-        public IEnumerable<GitHubRepo> GitHub()
+        public IEnumerable<GitHubRepo> GetRepos()
         {
-            IEnumerable<GitHubRepo> data = new List<GitHubRepo>();
-
             string owner = "meddlin";
-            string URL = "https://api.github.com/users/" + owner + "/repos";
-            // string urlParameters = "?api_key=123";
+            List<GitHubRepo> data = GitHubRestClient.GetRepos(owner, Configuration.GetValue<string>("GitHubToken")).ToList();
 
-            /*
-             * Set up the HttpClient
-             */
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri(URL);
-            client.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json")
-            );
-            client.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("GitHubConsumerApp", "1.0"));
-            client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Token", Configuration.GetValue<string>("GitHubToken"));
+            return data;
+        }
 
-
-            /*
-             * Call the API, and process the response.
-             */
-            HttpResponseMessage response = client.GetAsync(URL).Result;  // Blocking call! Program will wait here until a response is received or a timeout occurs.
-            if (response.IsSuccessStatusCode)
-            {
-                // ...but we also get the string for debugging
-                var simpleData = response.Content.ReadAsStringAsync().Result;
-                Console.WriteLine(simpleData);
-
-                // Parse the response -- we want the JSON
-                data = response.Content.ReadFromJsonAsync<IEnumerable<GitHubRepo>>().Result;
-                
-                
-            }
-            else
-            {
-                // Print the unsuccessful response code.
-                Console.WriteLine("{0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
-            }
-
+        [HttpGet]
+        public GitHubActionsWorkflowResponse RepoWorkflows()
+        {
+            string owner = "meddlin";
+            string repo = "amortize-client";
+            GitHubActionsWorkflowResponse data = GitHubRestClient.GetRepoWorkflows(owner, repo, Configuration.GetValue<string>("GitHubToken"));
             return data;
         }
     }
