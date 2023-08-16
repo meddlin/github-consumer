@@ -41,7 +41,6 @@ namespace GitHubConsumer.Controllers
             client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Token", Configuration.GetValue<string>("GitHubToken"));
 
-
             /*
              * Call the API, and process the response.
              */
@@ -54,8 +53,6 @@ namespace GitHubConsumer.Controllers
 
                 // Parse the response -- we want the JSON
                 data = response.Content.ReadFromJsonAsync<IEnumerable<GitHubRepo>>().Result;
-                
-                
             }
             else
             {
@@ -64,6 +61,47 @@ namespace GitHubConsumer.Controllers
             }
 
             return data;
+        }
+
+        [HttpGet]
+        public void RepoWorkflows()
+        {
+            string API_BASE = "https://api.github.com";
+            string owner = "meddlin";
+            string repo = "amortize-client";
+            string URL = API_BASE + "/repos/" + owner + "/" + repo + "/actions/workflows";
+            /*
+             * Set up the HttpClient
+             */
+            HttpClient client = new HttpClient();
+            client.BaseAddress = new Uri(URL);
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json")
+            );
+            client.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("GitHubConsumerApp", "1.0"));
+            client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Token", Configuration.GetValue<string>("GitHubToken"));
+
+
+            IEnumerable<GitHubActionsWorkflow> data = new List<GitHubActionsWorkflow>();
+            /*
+             * Call the API, and process the response.
+             */
+            HttpResponseMessage response = client.GetAsync(URL).Result;  // Blocking call! Program will wait here until a response is received or a timeout occurs.
+            if (response.IsSuccessStatusCode)
+            {
+                // ...but we also get the string for debugging
+                var simpleData = response.Content.ReadAsStringAsync().Result;
+                Console.WriteLine(simpleData);
+
+                // Parse the response -- we want the JSON
+                data = response.Content.ReadFromJsonAsync<IEnumerable<GitHubActionsWorkflow>>().Result;
+            }
+            else
+            {
+                // Print the unsuccessful response code.
+                Console.WriteLine("{0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
+            }
         }
     }
 }
