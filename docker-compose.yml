@@ -1,0 +1,117 @@
+version: "3.8"
+services:
+  db:
+    image: postgres
+    container_name: ghconsumer_pgdb
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: meddlin
+      POSTGRES_PASSWORD: Password1
+      POSTGRES_DB: github-db
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+  # redis:
+  #   image: redis
+  #   command: redis-server --requirepass Password1
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ghconsumer_pgadmin4
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: meddlin@domain.com
+      PGADMIN_DEFAULT_PASSWORD: Password1
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ghconsumer_grafana
+    ports:
+      - "3030:3000"
+    environment:
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db
+      - GF_DATABASE_PORT=5432
+      - GF_DATABASE_NAME=github-db
+      - GF_DATABASE_USER=meddlin
+      - GF_DATABASE_PASSWORD=Password1
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - db
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: ghconsumer_elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    depends_on:
+      - db
+  # pgsync:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   command: ./runserver.sh
+  #   sysctls:
+  #     - net.ipv4.tcp_keepalive_time=200
+  #     - net.ipv4.tcp_keepalive_intvl=200
+  #     - net.ipv4.tcp_keepalive_probes=5
+  #   labels:
+  #     org.label-schema.name: "pgsync"
+  #     org.label-schema.description: "Postgres to Elasticsearch sync"
+  #     com.label-schema.service-type: "daemon"
+  #   depends_on:
+  #     - db
+  #     - redis
+  #     - elasticsearch
+  #   environment:
+  #     - PG_USER=meddlin
+  #     - PG_HOST=db
+  #     - PG_PORT=5432
+  #     - PG_PASSWORD=Password1
+  #     - LOG_LEVEL=INFO
+  #     - ELASTICSEARCH_PORT=9200
+  #     - ELASTICSEARCH_SCHEME=http
+  #     - ELASTICSEARCH_HOST=elasticsearch
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_AUTH=Password1
+  #     - ELASTICSEARCH=true
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.15.2
+    container_name: ghconsumer_logstash
+    volumes:
+      # - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      # - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - logstash_data:/usr/share/logstash/data
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - elasticsearch
+
+volumes:
+  local_pgdata: 
+  pgadmin-data:
+  grafana-storage:
+  elasticsearch_data:
+    driver: local
+  logstash_data:
+    driver: local
