@@ -1,0 +1,60 @@
+version: "3.8"
+services:
+  db:
+    image: postgres
+    container_name: ghconsumer_pgdb
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: meddlin
+      POSTGRES_PASSWORD: Password1
+      POSTGRES_DB: github-db
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ghconsumer_pgadmin4
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: meddlin@domain.com
+      PGADMIN_DEFAULT_PASSWORD: Password1
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ghconsumer_grafana
+    ports:
+      - "3030:3000"
+    environment:
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db
+      - GF_DATABASE_PORT=5432
+      - GF_DATABASE_NAME=github-db
+      - GF_DATABASE_USER=meddlin
+      - GF_DATABASE_PASSWORD=Password1
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - db
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: ghconsumer_elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    depends_on:
+      - db
+
+volumes:
+  local_pgdata: 
+  pgadmin-data:
+  grafana-storage:
+  elasticsearch_data:
+    driver: local
